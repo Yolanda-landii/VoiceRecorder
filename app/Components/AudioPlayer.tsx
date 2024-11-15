@@ -20,7 +20,6 @@ export default function AudioPlayer({ uri }) {
       }
     };
   }, [uri]);
-  
 
   const loadAudio = async () => {
     try {
@@ -42,7 +41,6 @@ export default function AudioPlayer({ uri }) {
       setIsLoading(false);
     }
   };
-  
 
   const onPlaybackStatusUpdate = (status) => {
     if (status.isLoaded) {
@@ -68,9 +66,6 @@ export default function AudioPlayer({ uri }) {
       }
     }
   };
-  
-  
-  
 
   const handleSliderChange = async (value) => {
     if (sound) {
@@ -80,6 +75,7 @@ export default function AudioPlayer({ uri }) {
   };
 
   const formatTime = (millis) => {
+    if (isNaN(millis) || millis <= 0) return '00:00'; // Guard against NaN or invalid duration
     const minutes = Math.floor(millis / 60000);
     const seconds = ((millis % 60000) / 1000).toFixed(0);
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
@@ -90,7 +86,7 @@ export default function AudioPlayer({ uri }) {
       <Text style={styles.header}>Audio Player</Text>
       <Slider
         style={styles.slider}
-        value={position / duration || 0}
+        value={duration > 0 ? position / duration : 0} // Only update slider when duration is valid
         onValueChange={handleSliderChange}
         minimumTrackTintColor="#ff007f"
         maximumTrackTintColor="#ffffff"
@@ -101,15 +97,14 @@ export default function AudioPlayer({ uri }) {
         <Text style={styles.time}>{formatTime(duration)}</Text>
       </View>
       <TouchableOpacity
-  onPress={handlePlayPause}
-  style={styles.playButton}
-  disabled={isLoading}
->
-  <Text style={styles.playButtonText}>
-    {isLoading ? 'Loading...' : isPlaying ? 'Pause' : 'Play'}
-  </Text>
-</TouchableOpacity>
-
+        onPress={handlePlayPause}
+        style={styles.playButton}
+        disabled={isLoading}
+      >
+        <Text style={styles.playButtonText}>
+          {isLoading ? 'Loading...' : isPlaying ? 'Pause' : 'Play'}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }

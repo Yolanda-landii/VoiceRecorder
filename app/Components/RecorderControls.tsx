@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { View, Button, Alert, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Alert, StyleSheet, TouchableOpacity } from 'react-native';
 import { Audio } from 'expo-av';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
 export default function RecorderControls({ saveAudioNote }) {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
@@ -52,10 +53,11 @@ export default function RecorderControls({ saveAudioNote }) {
     try {
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
+
       if (uri) {
         saveAudioNote({
           id: new Date().toISOString(),
-          path: uri,
+          uri,
           date: new Date().toLocaleString(),
         });
       } else {
@@ -71,14 +73,33 @@ export default function RecorderControls({ saveAudioNote }) {
 
   return (
     <View style={styles.container}>
-      <Button
-        title={isRecording ? 'Stop Recording' : 'Start Recording'}
+      <TouchableOpacity
         onPress={isRecording ? stopRecording : startRecording}
-      />
+        style={[styles.recordButton, isRecording ? styles.stopButton : styles.startButton]}
+      >
+        <FontAwesome name={isRecording ? 'stop' : 'microphone'} size={30} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { marginVertical: 20 },
+  container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 20,
+  },
+  recordButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  startButton: {
+    backgroundColor: '#ff007f',
+  },
+  stopButton: {
+    backgroundColor: '#ff0000',
+  },
 });

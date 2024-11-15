@@ -39,10 +39,12 @@ export default function App() {
     try {
       const newNotes = audioNotes.filter((note) => note.id !== id);
       await AsyncStorage.setItem('audioNotes', JSON.stringify(newNotes));
-      setRefresh(!refresh);
+
+      // Stop playback if the deleted note is currently playing
       if (selectedAudioUri === id) {
         setSelectedAudioUri(null);
       }
+      setRefresh(!refresh);
     } catch (error) {
       console.error("Failed to delete audio note:", error);
       Alert.alert("Storage Error", "Could not delete audio note.");
@@ -53,22 +55,26 @@ export default function App() {
     <View style={styles.container}>
       <Text style={styles.header}>All Recordings</Text>
 
-      <FlatList
-        data={audioNotes}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.audioItem}>
-            <TouchableOpacity onPress={() => setSelectedAudioUri(item.path)} style={styles.recordingInfo}>
-              <Text style={styles.recordingTitle}>{item.id}</Text>
-              <Text style={styles.recordingDate}>{item.date}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => deleteAudioNote(item.id)} style={styles.deleteButton}>
-              <Text style={styles.deleteButtonText}>Delete</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-        contentContainerStyle={{ paddingBottom: 150 }} 
-      />
+      {audioNotes.length === 0 ? (
+        <Text style={styles.emptyState}>No recordings available. Start recording to add notes!</Text>
+      ) : (
+        <FlatList
+          data={audioNotes}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.audioItem}>
+              <TouchableOpacity onPress={() => setSelectedAudioUri(item.uri)} style={styles.recordingInfo}>
+                <Text style={styles.recordingTitle}>{item.id}</Text>
+                <Text style={styles.recordingDate}>{item.date}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => deleteAudioNote(item.id)} style={styles.deleteButton}>
+                <Text style={styles.deleteButtonText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          contentContainerStyle={{ paddingBottom: 150 }}
+        />
+      )}
 
       {selectedAudioUri && (
         <View style={styles.audioPlayerContainer}>
@@ -86,6 +92,7 @@ export default function App() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#f5f5f5' },
   header: { fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
+  emptyState: { fontSize: 18, color: '#888', textAlign: 'center', marginTop: 20 },
   audioItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -101,7 +108,7 @@ const styles = StyleSheet.create({
   deleteButtonText: { color: '#ff0000' },
   audioPlayerContainer: {
     position: 'absolute',
-    bottom: 80, 
+    bottom: 80,
     left: 0,
     right: 0,
     backgroundColor: '#fff',
