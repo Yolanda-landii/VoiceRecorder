@@ -54,7 +54,7 @@ export default function RecorderControls({ saveAudioNote }) {
       const uri = recording.getURI();
       if (uri) {
         saveAudioNote({
-          id: new Date().toISOString(), // You could use a unique ID here
+          id: new Date().toISOString(),
           path: uri,
           date: new Date().toLocaleString(),
         });

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Button, FlatList, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Alert, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import RecorderControls from '../Components/RecorderControls';
 import AudioPlayer from '../Components/AudioPlayer';
@@ -40,6 +40,9 @@ export default function App() {
       const newNotes = audioNotes.filter((note) => note.id !== id);
       await AsyncStorage.setItem('audioNotes', JSON.stringify(newNotes));
       setRefresh(!refresh);
+      if (selectedAudioUri === id) {
+        setSelectedAudioUri(null);
+      }
     } catch (error) {
       console.error("Failed to delete audio note:", error);
       Alert.alert("Storage Error", "Could not delete audio note.");
@@ -48,34 +51,74 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Audio Recorder App</Text>
-      <RecorderControls saveAudioNote={saveAudioNote} />
+      <Text style={styles.header}>All Recordings</Text>
+
       <FlatList
         data={audioNotes}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.audioItem}>
-            <Text>{item.date}</Text>
-            <Button
-              title="Play"
-              onPress={() => setSelectedAudioUri(item.path)}
-            />
-            <Button
-              title="Delete"
-              onPress={() => deleteAudioNote(item.id)}
-            />
-            {/* Render AudioPlayer only if selectedAudioUri matches the item's path */}
-            {selectedAudioUri && <AudioPlayer uri={selectedAudioUri} />}
-
+            <TouchableOpacity onPress={() => setSelectedAudioUri(item.path)} style={styles.recordingInfo}>
+              <Text style={styles.recordingTitle}>{item.id}</Text>
+              <Text style={styles.recordingDate}>{item.date}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => deleteAudioNote(item.id)} style={styles.deleteButton}>
+              <Text style={styles.deleteButtonText}>Delete</Text>
+            </TouchableOpacity>
           </View>
         )}
+        contentContainerStyle={{ paddingBottom: 150 }} 
       />
+
+      {selectedAudioUri && (
+        <View style={styles.audioPlayerContainer}>
+          <AudioPlayer uri={selectedAudioUri} />
+        </View>
+      )}
+
+      <View style={styles.recorderControlsContainer}>
+        <RecorderControls saveAudioNote={saveAudioNote} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#f5f5f5' },
-  header: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
-  audioItem: { marginVertical: 10, padding: 10, backgroundColor: '#fff', borderRadius: 5 },
+  header: { fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
+  audioItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  recordingInfo: { flex: 1 },
+  recordingTitle: { fontSize: 16, fontWeight: 'bold' },
+  recordingDate: { fontSize: 14, color: '#888' },
+  deleteButton: { padding: 8 },
+  deleteButtonText: { color: '#ff0000' },
+  audioPlayerContainer: {
+    position: 'absolute',
+    bottom: 80, 
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#ddd',
+  },
+  recorderControlsContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#ddd',
+  },
 });
