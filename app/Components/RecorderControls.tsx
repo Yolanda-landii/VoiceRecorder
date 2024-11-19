@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Alert, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Alert, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Audio } from 'expo-av';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
@@ -7,6 +7,7 @@ export default function RecorderControls({ saveAudioNote }) {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [elapsedTime, setElapsedTime] = useState(0); // Timer state
 
   useEffect(() => {
     const checkPermissions = async () => {
@@ -21,6 +22,22 @@ export default function RecorderControls({ saveAudioNote }) {
 
     checkPermissions();
   }, []);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+
+    if (isRecording) {
+      timer = setInterval(() => {
+        setElapsedTime((prevTime) => prevTime + 1);
+      }, 1000);
+    } else {
+      clearInterval(timer!);
+    }
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isRecording]);
 
   const startRecording = async () => {
     if (!hasPermission) {
@@ -41,6 +58,7 @@ export default function RecorderControls({ saveAudioNote }) {
 
       setRecording(recordingInstance);
       setIsRecording(true);
+      setElapsedTime(0); // Reset the timer
     } catch (error) {
       console.error("Failed to start recording:", error);
       Alert.alert("Error", "Failed to start recording.");
@@ -59,20 +77,30 @@ export default function RecorderControls({ saveAudioNote }) {
           id: new Date().toISOString(),
           uri,
           date: new Date().toLocaleString(),
+          duration: elapsedTime, // Save duration
         });
       } else {
         Alert.alert('Error', 'No audio recorded');
       }
+
       setRecording(null);
       setIsRecording(false);
+      setElapsedTime(0); // Reset the timer
     } catch (error) {
       console.error("Failed to stop recording:", error);
       Alert.alert("Error", "Failed to stop recording.");
     }
   };
 
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
   return (
     <View style={styles.container}>
+      <Text style={styles.timer}>{formatTime(elapsedTime)}</Text>
       <TouchableOpacity
         onPress={isRecording ? stopRecording : startRecording}
         style={[styles.recordButton, isRecording ? styles.stopButton : styles.startButton]}
@@ -87,7 +115,13 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 20,
+    marginVertical: -10,
+  },
+  timer: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#333',
   },
   recordButton: {
     width: 60,

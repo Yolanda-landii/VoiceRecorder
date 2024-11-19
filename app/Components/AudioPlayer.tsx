@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Button, Alert, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Audio } from 'expo-av';
 import Slider from '@react-native-community/slider';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function AudioPlayer({ uri }) {
   const [sound, setSound] = useState(null);
@@ -13,6 +14,7 @@ export default function AudioPlayer({ uri }) {
   useEffect(() => {
     if (uri) {
       loadAudio();
+      getAudioState();
     }
     return () => {
       if (sound) {
@@ -21,24 +23,61 @@ export default function AudioPlayer({ uri }) {
     };
   }, [uri]);
 
+  // Load audio file from URI and set up the audio player
   const loadAudio = async () => {
+    if (!uri) {
+      Alert.alert("Error", "Audio file not found.");
+      return;
+    }
+
     try {
       setIsLoading(true);
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
         playsInSilentModeIOS: true,
       });
-      const { sound: newSound } = await Audio.Sound.createAsync(
+
+      const { sound: newSound, status } = await Audio.Sound.createAsync(
         { uri },
         { shouldPlay: false },
         onPlaybackStatusUpdate
       );
+
       setSound(newSound);
+      if (status.isLoaded) {
+        setDuration(status.durationMillis || 0);
+      }
       setIsLoading(false);
     } catch (error) {
       console.error("Error loading audio", error);
       Alert.alert("Error", "Failed to load audio.");
       setIsLoading(false);
+    }
+  };
+
+  const storeAudioState = async (state) => {
+    try {
+      await AsyncStorage.setItem('audioPlaybackState', JSON.stringify(state));
+    } catch (error) {
+      console.error("Failed to save audio state", error);
+    }
+  };
+
+  const getAudioState = async () => {
+    try {
+      const savedState = await AsyncStorage.getItem('audioPlaybackState');
+      if (savedState) {
+        const { uri: savedUri, position: savedPosition, isPlaying: savedIsPlaying } = JSON.parse(savedState);
+        if (savedUri === uri) {
+          setPosition(savedPosition);
+          setIsPlaying(savedIsPlaying);
+          if (savedIsPlaying) {
+            playAudio();
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load audio state", error);
     }
   };
 
@@ -55,15 +94,28 @@ export default function AudioPlayer({ uri }) {
       console.warn("Audio is still loading.");
       return;
     }
-    if (sound && isPlaying) {
-      await sound.pauseAsync();
-    } else if (sound && !isPlaying) {
-      try {
+
+    if (!sound) {
+      console.error("Sound is not loaded.");
+      return;
+    }
+
+    try {
+      if (isPlaying) {
+        await sound.pauseAsync();
+        setIsPlaying(false);
+      } else {
         await sound.playAsync();
-      } catch (error) {
-        console.error("Error playing audio:", error);
-        Alert.alert("Error", "Failed to play audio.");
+        setIsPlaying(true);
       }
+      storeAudioState({
+        uri,
+        position,
+        isPlaying: !isPlaying,
+      });
+    } catch (error) {
+      console.error("Error playing audio:", error);
+      Alert.alert("Error", "Failed to play audio.");
     }
   };
 
@@ -71,11 +123,17 @@ export default function AudioPlayer({ uri }) {
     if (sound) {
       const seekPosition = value * duration;
       await sound.setPositionAsync(seekPosition);
+      setPosition(seekPosition);
+      storeAudioState({
+        uri,
+        position: seekPosition,
+        isPlaying,
+      });
     }
   };
 
   const formatTime = (millis) => {
-    if (isNaN(millis) || millis <= 0) return '00:00'; // Guard against NaN or invalid duration
+    if (isNaN(millis) || millis <= 0) return '00:00'; 
     const minutes = Math.floor(millis / 60000);
     const seconds = ((millis % 60000) / 1000).toFixed(0);
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
@@ -112,7 +170,8 @@ export default function AudioPlayer({ uri }) {
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    padding: 20,
+    padding: 10,
+    marginTop: 50,
     backgroundColor: '#333',
     borderRadius: 10,
   },
@@ -129,7 +188,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-    marginTop: 10,
+    marginTop: 5,
   },
   time: {
     color: '#fff',
@@ -138,10 +197,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#ff007f',
     padding: 10,
     borderRadius: 50,
-    marginTop: 20,
+    marginTop: 5,
   },
   playButtonText: {
     color: '#fff',
     fontSize: 18,
   },
 });
+
