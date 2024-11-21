@@ -13,5 +13,5 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-, "app/Components/AudioPlayer.tsx", "app/Components/RecorderControls.tsx", "app/(tabs)/index.tsx"  ]
+, "app/AudioPlayer.jsx", "app/RecorderControls.tsx", "app/(tabs)/index.jsx"  ]
 }

@@ -1,23 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  Alert,
-  TouchableOpacity,
-  TextInput,
-} from 'react-native';
+import {View,Text,StyleSheet,FlatList,Alert,TouchableOpacity,TextInput,} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import RecorderControls from '../Components/RecorderControls';
-import AudioPlayer from '../Components/AudioPlayer';
+import RecorderControls from '../app/RecorderControls';
+import AudioPlayer from '../app/AudioPlayer';
 
-export default function App() {
+export default function HomeScreen() {
   const [audioNotes, setAudioNotes] = useState([]);
   const [refresh, setRefresh] = useState(false);
   const [selectedAudioUri, setSelectedAudioUri] = useState(null);
-  const [editingId, setEditingId] = useState(null); // Track which note is being edited
-  const [editedTitle, setEditedTitle] = useState(''); // Store the edited title
+  const [editingId, setEditingId] = useState(null); 
+  const [editedTitle, setEditedTitle] = useState(''); 
 
   useEffect(() => {
     loadAudioNotes();
